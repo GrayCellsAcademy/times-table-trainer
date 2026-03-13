@@ -4,20 +4,20 @@ import {
   getUser, updateProgress, addCertificate,
   createClass, getClass, joinClass, getStudentsForClass, setUserClass,
 } from "./firebase";
- 
+
 // ─── Constants ───────────────────────────────────────────────────
 const MIN_TABLE = 2;
 const MAX_TABLE = 12;
 const MULTIPLIERS = [1,2,3,4,5,6,7,8,9,10,11,12];
 const STAGE1_TIME_GOAL = 30;
 const QUESTION_TIME = 10;
- 
+
 const TABLE_COLORS = {
   2:"#f472b6",3:"#fb923c",4:"#facc15",5:"#4ade80",
   6:"#22d3ee",7:"#818cf8",8:"#e879f9",9:"#f87171",
   10:"#fbbf24",11:"#86efac",12:"#67e8f9",
 };
- 
+
 // ─── Game helpers ────────────────────────────────────────────────
 function shuffle(arr) {
   const a=[...arr];
@@ -32,24 +32,24 @@ function buildS3Questions(table, mastered) {
 function buildPracticeQs(mastered) {
   return shuffle(mastered.flatMap(t=>MULTIPLIERS.map(m=>({a:t,b:m,streakNeeded:2,streak:0}))));
 }
- 
+
 // ─── Shared UI components ─────────────────────────────────────────
- 
+
 function Stars() {
   const st=useRef(Array.from({length:20},(_,i)=>({x:5+(i*17)%90,y:5+(i*23)%85,size:6+i%3*4,delay:i*0.3,dur:2+i%3}))).current;
   return <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>{st.map((s,i)=><div key={i} style={{position:"absolute",left:`${s.x}%`,top:`${s.y}%`,fontSize:s.size,opacity:.13,color:["#fbbf24","#f472b6","#34d399","#60a5fa","#a78bfa"][i%5],animation:`twinkle ${s.dur}s ease-in-out ${s.delay}s infinite`}}>★</div>)}</div>;
 }
- 
+
 function Confetti() {
   const pieces=useRef(Array.from({length:55},(_,i)=>({x:Math.random()*100,delay:Math.random()*1.5,dur:1.8+Math.random()*1.6,size:8+Math.random()*10,color:["#f472b6","#fbbf24","#4ade80","#60a5fa","#e879f9","#fb923c","#67e8f9"][i%7],shape:i%3===0?"★":i%3===1?"●":"■",drift:(Math.random()-.5)*80}))).current;
   return <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:100,overflow:"hidden"}}>{pieces.map((p,i)=><div key={i} style={{position:"absolute",left:`${p.x}%`,top:"-5%",fontSize:p.size,color:p.color,animation:`confettiFall ${p.dur}s ease-in ${p.delay}s both`,"--drift":`${p.drift}px`}}>{p.shape}</div>)}</div>;
 }
- 
+
 function ProgressBar({current,total,color}) {
   const pct=total>0?Math.round((current/total)*100):0;
   return <div style={{width:"100%",height:13,background:"rgba(255,255,255,0.14)",borderRadius:99,overflow:"hidden",margin:"7px 0"}}><div style={{height:"100%",width:`${pct}%`,background:color,borderRadius:99,transition:"width 0.4s ease",boxShadow:`0 0 8px ${color}`}}/></div>;
 }
- 
+
 function CountdownTimer({seconds, total}) {
   const radius = 26;
   const circ = 2 * Math.PI * radius;
@@ -74,12 +74,12 @@ function CountdownTimer({seconds, total}) {
     </div>
   );
 }
- 
+
 function Toast({msg,color}) {
   if(!msg) return null;
   return <div style={{position:"fixed",top:"18%",left:"50%",transform:"translateX(-50%)",background:color,color:"#fff",fontFamily:"'Fredoka One',cursive",fontSize:"clamp(18px,4vw,32px)",padding:"11px 28px",borderRadius:99,boxShadow:`0 6px 28px ${color}88`,zIndex:400,animation:"popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)",whiteSpace:"nowrap"}}>{msg}</div>;
 }
- 
+
 function WrongPanel({wrong,onDismiss}) {
   return (
     <div style={{background:"rgba(239,68,68,0.13)",border:"2px solid rgba(239,68,68,0.5)",borderRadius:20,padding:"16px 20px",animation:"bounceIn 0.3s ease"}}>
@@ -97,7 +97,7 @@ function WrongPanel({wrong,onDismiss}) {
     </div>
   );
 }
- 
+
 function Celebration({title,subtitle,body,emoji,buttonLabel,buttonColor,onContinue,showConfetti=true}) {
   return (
     <div style={{position:"fixed",inset:0,zIndex:200,background:"linear-gradient(135deg,rgba(6,3,30,0.97),rgba(22,6,60,0.97))",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
@@ -114,7 +114,7 @@ function Celebration({title,subtitle,body,emoji,buttonLabel,buttonColor,onContin
     </div>
   );
 }
- 
+
 function Certificate({cert, onClose}) {
   const borderColor = "#fbbf24";
   return (
@@ -151,7 +151,7 @@ function Certificate({cert, onClose}) {
     </div>
   );
 }
- 
+
 // ─── Spinner ──────────────────────────────────────────────────────
 function Spinner() {
   return (
@@ -160,7 +160,7 @@ function Spinner() {
     </div>
   );
 }
- 
+
 // ─── Teacher Dashboard ────────────────────────────────────────────
 function TeacherDashboard({user, onBack}) {
   const [cls, setCls] = useState(null);
@@ -172,7 +172,7 @@ function TeacherDashboard({user, onBack}) {
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [viewCert, setViewCert] = useState(null);
- 
+
   useEffect(()=>{
     const load = async () => {
       if (user.classId) {
@@ -189,7 +189,7 @@ function TeacherDashboard({user, onBack}) {
     };
     load();
   },[user.classId]);
- 
+
   const handleCreateClass = async () => {
     if (!className.trim()||!classPass.trim()) { setErr("Please fill in both fields."); return; }
     try {
@@ -198,18 +198,18 @@ function TeacherDashboard({user, onBack}) {
       window.location.reload();
     } catch(e) { setErr("Error creating class. Try again."); }
   };
- 
+
   const stageLabel = (p) => {
     if (!p) return "—";
     if (p.masteredTables?.length===11) return "🏆 All Mastered!";
     const s = {s1:"Counting",s2:"Ordered Q&A",s3:"Mixed Q&A",practice:"Practice"}[p.stage]||p.stage;
     return `${p.currentTable}s — ${s}`;
   };
- 
+
   const card = {background:"rgba(255,255,255,0.11)",backdropFilter:"blur(14px)",borderRadius:24,padding:"clamp(16px,3vw,48px)",border:"2px solid rgba(255,255,255,0.18)",boxShadow:"0 8px 36px rgba(0,0,0,0.28)",width:"min(92vw, 1100px)",position:"relative",zIndex:1};
- 
+
   if (loading) return <Spinner/>;
- 
+
   if (showCreate) return (
     <div style={{...card,textAlign:"center",animation:"bounceIn 0.4s ease"}}>
       <div style={{fontSize:48,marginBottom:8}}>🏫</div>
@@ -223,7 +223,7 @@ function TeacherDashboard({user, onBack}) {
       </div>
     </div>
   );
- 
+
   return (
     <div style={{...card,maxWidth:"min(92vw, 1100px)"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18,flexWrap:"wrap",gap:8}}>
@@ -233,7 +233,7 @@ function TeacherDashboard({user, onBack}) {
         </div>
         <button onClick={onBack} style={{fontFamily:"'Fredoka One',cursive",padding:"8px 18px",borderRadius:99,border:"1px solid rgba(255,255,255,0.22)",background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.65)",cursor:"pointer",fontSize:13}}>← Back</button>
       </div>
- 
+
       {students.length===0 ? (
         <div style={{textAlign:"center",padding:"30px 0",color:"rgba(255,255,255,0.45)",fontSize:15}}>
           <div style={{fontSize:36,marginBottom:8}}>👋</div>
@@ -281,21 +281,21 @@ function TeacherDashboard({user, onBack}) {
     </div>
   );
 }
- 
+
 // ─── MAIN APP ─────────────────────────────────────────────────────
 export default function TimesTableApp() {
- 
+
   // ── Auth / user state ────────────────────────────────────────
   const [authLoading, setAuthLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null); // Firestore user doc
   const [firebaseUser, setFirebaseUser] = useState(null); // Firebase Auth user
- 
+
   // ── App screens ──────────────────────────────────────────────
   // boot | login | signup | join_class | teacher_home | student_home | game | teacher_dashboard
   const [appScreen, setAppScreen] = useState("boot");
   const [viewCert, setViewCert] = useState(null);
   const [celebration, setCelebration] = useState(null);
- 
+
   // ── Auth form state ──────────────────────────────────────────
   const [authMode, setAuthMode] = useState("login"); // "login" | "signup"
   const [authName, setAuthName] = useState("");
@@ -304,42 +304,42 @@ export default function TimesTableApp() {
   const [authRole, setAuthRole] = useState(null);
   const [authErr, setAuthErr] = useState("");
   const [authWorking, setAuthWorking] = useState(false);
- 
+
   // ── Join class form ──────────────────────────────────────────
   const [joinClassName, setJoinClassName] = useState("");
   const [joinClassPass, setJoinClassPass] = useState("");
   const [joinErr, setJoinErr] = useState("");
- 
+
   // ── Game state ───────────────────────────────────────────────
   const [gameScreen, setGameScreen] = useState("home");
   const [currentTable, setCurrentTable] = useState(MIN_TABLE);
   const [masteredTables, setMasteredTables] = useState([]);
- 
+
   const [s1Input,setS1Input]=useState(""); const [s1Next,setS1Next]=useState(MIN_TABLE);
   const [s1Timer,setS1Timer]=useState(0); const [s1Running,setS1Running]=useState(false);
   const [s1Done,setS1Done]=useState(false); const [s1Best,setS1Best]=useState(null);
   const [s1Tutorial,setS1Tutorial]=useState(true); const s1Ref=useRef(null);
- 
+
   const [s2Questions,setS2Questions]=useState([]); const [s2Idx,setS2Idx]=useState(0);
   const [s2Passes,setS2Passes]=useState(0); const [s2Errors,setS2Errors]=useState(0);
   const [s2Input,setS2Input]=useState(""); const [s2Wrong,setS2Wrong]=useState(null);
   const s2Ref=useRef(null);
- 
+
   const [s3Questions,setS3Questions]=useState([]); const [s3Idx,setS3Idx]=useState(0);
   const [s3Input,setS3Input]=useState(""); const [s3Remaining,setS3Remaining]=useState(0);
   const [s3Wrong,setS3Wrong]=useState(null); const s3Ref=useRef(null);
- 
+
   const [practiceQs,setPracticeQs]=useState([]); const [practiceIdx,setPracticeIdx]=useState(0);
   const [practiceInput,setPracticeInput]=useState(""); const [practiceRemaining,setPracticeRemaining]=useState(0);
   const [practiceWrong,setPracticeWrong]=useState(null); const practiceRef=useRef(null);
- 
+
   const [toast,setToast]=useState(null); const [toastColor,setToastColor]=useState("#22c55e");
   const toastTimer=useRef(null);
- 
+
   // ── Per-question countdown (s2 & s3) ────────────────────────
   const [qTimer, setQTimer] = useState(QUESTION_TIME);
   const qTimerRef = useRef(null);
- 
+
   // ── Listen for Firebase auth state ──────────────────────────
   useEffect(()=>{
     const unsub = onAuthChange(async (fbUser) => {
@@ -361,7 +361,7 @@ export default function TimesTableApp() {
     });
     return () => unsub();
   },[]);
- 
+
   // ── Auth actions ─────────────────────────────────────────────
   const doSignup = async () => {
     if (!authName.trim()||!authEmail.trim()||!authPassword.trim()||!authRole) {
@@ -382,7 +382,7 @@ export default function TimesTableApp() {
     }
     setAuthWorking(false);
   };
- 
+
   const doLogin = async () => {
     if (!authEmail.trim()||!authPassword.trim()) { setAuthErr("Please enter your email and password."); return; }
     setAuthWorking(true); setAuthErr("");
@@ -394,14 +394,14 @@ export default function TimesTableApp() {
     }
     setAuthWorking(false);
   };
- 
+
   const doLogout = async () => {
     await logoutUser();
     setCurrentUser(null); setFirebaseUser(null);
     setAuthEmail(""); setAuthPassword(""); setAuthName(""); setAuthRole(null); setAuthErr("");
     setAppScreen("login");
   };
- 
+
   // ── Join class ───────────────────────────────────────────────
   const doJoinClass = async () => {
     if (!joinClassName.trim()||!joinClassPass.trim()) { setJoinErr("Please enter the class name and password."); return; }
@@ -415,7 +415,7 @@ export default function TimesTableApp() {
       setJoinErr(e.message || "Class not found or wrong password.");
     }
   };
- 
+
   // ── Persist progress to Firestore ───────────────────────────
   const persistProgress = async (table, mastered, stage) => {
     if (!firebaseUser) return;
@@ -428,26 +428,26 @@ export default function TimesTableApp() {
     setCurrentUser(u => ({...u, progress}));
     await updateProgress(firebaseUser.uid, progress);
   };
- 
+
   // ── Toast ────────────────────────────────────────────────────
   const showToast=(msg,color="#22c55e",dur=700)=>{
     clearTimeout(toastTimer.current); setToast(msg); setToastColor(color);
     toastTimer.current=setTimeout(()=>setToast(null),dur);
   };
- 
+
   // ── Stage 1 timer ────────────────────────────────────────────
   useEffect(()=>{
     if(!s1Running) return;
     const id=setInterval(()=>setS1Timer(t=>t+0.1),100);
     return()=>clearInterval(id);
   },[s1Running]);
- 
+
   // ── Focus effects ────────────────────────────────────────────
   useEffect(()=>{ if(gameScreen==="s1"&&!s1Tutorial) setTimeout(()=>s1Ref.current?.focus(),80); },[gameScreen,s1Tutorial]);
   useEffect(()=>{ if(gameScreen==="s2"&&!s2Wrong) setTimeout(()=>s2Ref.current?.focus(),80); },[gameScreen,s2Idx,s2Wrong]);
   useEffect(()=>{ if(gameScreen==="s3"&&!s3Wrong) setTimeout(()=>s3Ref.current?.focus(),80); },[gameScreen,s3Idx,s3Wrong]);
   useEffect(()=>{ if(gameScreen==="practice"&&!practiceWrong) setTimeout(()=>practiceRef.current?.focus(),80); },[gameScreen,practiceIdx,practiceWrong]);
- 
+
   // ── Question countdown timer ─────────────────────────────────
   const resetQTimer = () => { clearInterval(qTimerRef.current); setQTimer(QUESTION_TIME); };
   const startQTimer = (onExpire) => {
@@ -460,7 +460,7 @@ export default function TimesTableApp() {
       if (remaining <= 0) { clearInterval(qTimerRef.current); onExpire(); }
     }, 1000);
   };
- 
+
   useEffect(() => {
     if (gameScreen === "s2" && !s2Wrong) {
       startQTimer(() => {
@@ -489,9 +489,9 @@ export default function TimesTableApp() {
     return () => clearInterval(qTimerRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[gameScreen, s2Idx, s2Wrong, s3Idx, s3Wrong]);
- 
+
   const tc = TABLE_COLORS[currentTable]||"#a78bfa";
- 
+
   // ── Start table ──────────────────────────────────────────────
   const startTable=(table,jump)=>{
     setCurrentTable(table);
@@ -504,13 +504,13 @@ export default function TimesTableApp() {
     setAppScreen("game");
     persistProgress(table, masteredTables, jump||"s1");
   };
- 
+
   const startPractice=(tables)=>{
     const qs=buildPracticeQs(tables);
     setPracticeQs(qs);setPracticeIdx(0);setPracticeInput("");setPracticeRemaining(qs.length);setPracticeWrong(null);
     setGameScreen("practice"); setAppScreen("game");
   };
- 
+
   // ── Stage 1 ──────────────────────────────────────────────────
   const handleS1Key=(e)=>{
     if(e.key!=="Enter") return;
@@ -529,7 +529,7 @@ export default function TimesTableApp() {
       buttonLabel:"On to Stage 2! →",buttonColor:tc,
       onContinue:()=>{setCelebration(null);setS2Questions(MULTIPLIERS.map(m=>({a:currentTable,b:m})));setS2Idx(0);setS2Passes(0);setS2Errors(0);setS2Input("");setS2Wrong(null);setGameScreen("s2");persistProgress(currentTable,masteredTables,"s2");}});
   };
- 
+
   // ── Stage 2 ──────────────────────────────────────────────────
   const handleS2Key=(e)=>{
     if(e.key!=="Enter") return;
@@ -556,7 +556,7 @@ export default function TimesTableApp() {
   };
   const s2Submit=()=>{handleS2Key({key:"Enter"});requestAnimationFrame(()=>s2Ref.current?.focus());};
   const dismissS2Wrong=()=>{resetQTimer();setS2Wrong(null);setS2Input("");setS2Idx(p=>(p+1)>=s2Questions.length?0:p+1);setTimeout(()=>s2Ref.current?.focus(),50);};
- 
+
   // ── Stage 3 ──────────────────────────────────────────────────
   const handleS3Key=(e)=>{
     if(e.key!=="Enter") return;
@@ -607,7 +607,7 @@ export default function TimesTableApp() {
   };
   const s3Submit=()=>{handleS3Key({key:"Enter"});requestAnimationFrame(()=>s3Ref.current?.focus());};
   const dismissS3Wrong=()=>{resetQTimer();setS3Wrong(null);setS3Input("");setS3Idx(p=>p%s3Questions.length);setTimeout(()=>s3Ref.current?.focus(),50);};
- 
+
   // ── Practice ─────────────────────────────────────────────────
   const handlePracticeKey=(e)=>{
     if(e.key!=="Enter") return;
@@ -633,21 +633,21 @@ export default function TimesTableApp() {
   };
   const practiceSubmit=()=>{handlePracticeKey({key:"Enter"});requestAnimationFrame(()=>practiceRef.current?.focus());};
   const dismissPracticeWrong=()=>{setPracticeWrong(null);setPracticeInput("");setPracticeIdx(p=>p%practiceQs.length);setTimeout(()=>practiceRef.current?.focus(),50);};
- 
+
   // ── Styles ───────────────────────────────────────────────────
   const card={background:"rgba(255,255,255,0.11)",backdropFilter:"blur(14px)",borderRadius:26,padding:"clamp(16px,4vw,48px)",border:"2px solid rgba(255,255,255,0.17)",boxShadow:"0 8px 38px rgba(0,0,0,0.28)",width:"min(92vw, 1100px)",position:"relative",zIndex:1};
   const bigInput={width:"100%",boxSizing:"border-box",fontSize:"clamp(26px,6vw,46px)",fontFamily:"'Fredoka One',cursive",textAlign:"center",padding:"13px 18px",background:"rgba(255,255,255,0.17)",border:"3px solid rgba(255,255,255,0.33)",borderRadius:16,color:"#fff",outline:"none",boxShadow:"inset 0 2px 8px rgba(0,0,0,0.13)",caretColor:"#fff"};
   const btn=(color,extra={})=>({fontFamily:"'Fredoka One',cursive",fontSize:"clamp(14px,2.8vw,20px)",padding:"12px 28px",borderRadius:99,border:"none",background:color,color:"#fff",cursor:"pointer",boxShadow:`0 4px 16px ${color}88`,transition:"transform 0.12s",...extra});
   const submitBtn=(color)=>({...btn(color,{marginTop:11,width:"100%",fontSize:"clamp(17px,3.8vw,24px)",padding:"14px"})});
   const inputStyle={width:"100%",boxSizing:"border-box",padding:"12px 16px",borderRadius:14,border:"2px solid rgba(255,255,255,0.28)",background:"rgba(255,255,255,0.13)",color:"#fff",fontSize:16,fontFamily:"'Nunito',sans-serif",marginBottom:12,outline:"none"};
- 
+
   const TableLabel=({stage})=>(
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
       <div style={{background:tc,color:"#fff",fontFamily:"'Fredoka One',cursive",fontSize:"clamp(12px,2.4vw,16px)",padding:"5px 14px",borderRadius:99,boxShadow:`0 2px 10px ${tc}88`}}>{currentTable}s Table</div>
       {stage&&<div style={{fontFamily:"'Fredoka One',cursive",fontSize:"clamp(12px,2.4vw,17px)",color:"#fbbf24"}}>{stage}</div>}
     </div>
   );
- 
+
   const Footer=()=>(
     <div style={{position:"relative",zIndex:1,marginTop:14,display:"flex",gap:5,flexWrap:"wrap",justifyContent:"center"}}>
       {Array.from({length:MAX_TABLE-MIN_TABLE+1},(_,i)=>i+MIN_TABLE).map(t=>(
@@ -657,25 +657,25 @@ export default function TimesTableApp() {
       ))}
     </div>
   );
- 
+
   if (authLoading) return <Spinner/>;
- 
+
   // ── Render ───────────────────────────────────────────────────
   return (
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#4c1d95 100%)",fontFamily:"'Nunito',sans-serif",padding:"clamp(12px,2vw,24px)",boxSizing:"border-box",position:"relative",overflow:"hidden"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap'); @keyframes twinkle{0%,100%{opacity:.08;transform:scale(1)}50%{opacity:.28;transform:scale(1.3)}} @keyframes popIn{from{transform:translateX(-50%) scale(0.5);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}} @keyframes bounceIn{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}} @keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}} @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}} @keyframes confettiFall{0%{transform:translateY(0) translateX(0) rotate(0);opacity:1}100%{transform:translateY(110vh) translateX(var(--drift)) rotate(720deg);opacity:0}} @keyframes superPulse{0%,100%{box-shadow:0 0 30px #fbbf24,0 0 60px #f472b6}50%{box-shadow:0 0 60px #fbbf24,0 0 100px #f472b6,0 0 140px #818cf8}} input:focus{border-color:rgba(255,255,255,0.8)!important;box-shadow:inset 0 2px 8px rgba(0,0,0,0.13),0 0 0 3px rgba(255,255,255,0.18)!important} button:hover{transform:scale(1.05)!important} button:active{transform:scale(0.97)!important} ::placeholder{color:rgba(255,255,255,0.32)} @media print{body>*:not(.cert-print){display:none}}`}</style>
- 
+
       <Stars/>
       <Toast msg={toast} color={toastColor}/>
       {celebration&&<Celebration {...celebration}/>}
       {viewCert&&<Certificate cert={viewCert} onClose={()=>setViewCert(null)}/>}
- 
+
       {/* ══ LOGIN / SIGNUP ══ */}
       {(appScreen==="login"||appScreen==="signup")&&(
         <div style={{...card,maxWidth:480,textAlign:"center",animation:"bounceIn 0.5s ease"}}>
           <div style={{fontSize:"clamp(42px,9vw,68px)",marginBottom:8,animation:"float 2s ease-in-out infinite"}}>🌟</div>
           <h1 style={{fontFamily:"'Fredoka One',cursive",fontSize:"clamp(22px,5vw,36px)",color:"#fbbf24",margin:"0 0 6px"}}>Times Table Trainer</h1>
- 
+
           {/* Tab toggle */}
           <div style={{display:"flex",gap:0,background:"rgba(255,255,255,0.08)",borderRadius:99,padding:4,marginBottom:20,marginTop:12}}>
             {[["login","Log In"],["signup","Sign Up"]].map(([mode,label])=>(
@@ -684,9 +684,9 @@ export default function TimesTableApp() {
               </button>
             ))}
           </div>
- 
+
           {authErr&&<div style={{color:"#f87171",fontSize:13,marginBottom:12,background:"rgba(239,68,68,0.1)",padding:"8px 14px",borderRadius:10}}>{authErr}</div>}
- 
+
           {authMode==="signup"&&(
             <>
               <input value={authName} onChange={e=>setAuthName(e.target.value)} placeholder="Your name" style={inputStyle}/>
@@ -702,17 +702,17 @@ export default function TimesTableApp() {
               </div>
             </>
           )}
- 
+
           <input value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="Email address" type="email" style={inputStyle}/>
           <input value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="Password (min 6 characters)" type="password" style={{...inputStyle,marginBottom:16}} onKeyDown={e=>e.key==="Enter"&&(authMode==="login"?doLogin():doSignup())}/>
- 
+
           <button style={btn("#fbbf24",{fontSize:"clamp(15px,3vw,20px)",padding:"13px 36px",width:"100%",opacity:authWorking?0.7:1})}
             onClick={authMode==="login"?doLogin:doSignup} disabled={authWorking}>
             {authWorking?"Working…":authMode==="login"?"Log In →":"Create Account →"}
           </button>
         </div>
       )}
- 
+
       {/* ══ JOIN CLASS ══ */}
       {appScreen==="join_class"&&(
         <div style={{...card,maxWidth:480,textAlign:"center",animation:"bounceIn 0.4s ease"}}>
@@ -728,7 +728,7 @@ export default function TimesTableApp() {
           </div>
         </div>
       )}
- 
+
       {/* ══ TEACHER HOME ══ */}
       {appScreen==="teacher_home"&&(
         <div style={{...card,maxWidth:480,textAlign:"center",animation:"bounceIn 0.4s ease"}}>
@@ -743,12 +743,12 @@ export default function TimesTableApp() {
           </div>
         </div>
       )}
- 
+
       {/* ══ TEACHER DASHBOARD ══ */}
       {appScreen==="teacher_dashboard"&&currentUser&&(
         <TeacherDashboard user={currentUser} onBack={()=>setAppScreen("teacher_home")}/>
       )}
- 
+
       {/* ══ STUDENT HOME ══ */}
       {appScreen==="student_home"&&(
         <div style={{...card,animation:"bounceIn 0.4s ease"}}>
@@ -769,7 +769,7 @@ export default function TimesTableApp() {
               Log Out
             </button>
           </div>
- 
+
           {/* Two-column layout */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))",gap:16}}>
             {/* Action panel */}
@@ -796,7 +796,7 @@ export default function TimesTableApp() {
                 </button>
               )}
             </div>
- 
+
             {/* Progress panel */}
             <div style={{background:"rgba(255,255,255,0.07)",borderRadius:18,padding:"clamp(14px,2.5vw,28px)"}}>
               <div style={{fontFamily:"'Fredoka One',cursive",fontSize:"clamp(13px,2vw,17px)",color:"rgba(255,255,255,0.5)",marginBottom:14}}>YOUR PROGRESS</div>
@@ -822,7 +822,7 @@ export default function TimesTableApp() {
           </div>
         </div>
       )}
- 
+
       {/* ══ GAME ══ */}
       {appScreen==="game"&&(
         <>
@@ -889,7 +889,7 @@ export default function TimesTableApp() {
               </div>
             </div>
           )}
- 
+
           {/* Stage 2 */}
           {gameScreen==="s2"&&(()=>{const q=s2Questions[s2Idx]; return(
             <div style={{...card}}>
@@ -914,7 +914,7 @@ export default function TimesTableApp() {
               </div>
             </div>
           );})()}
- 
+
           {/* Stage 3 */}
           {gameScreen==="s3"&&s3Questions.length>0&&(()=>{const q=s3Questions[s3Idx%s3Questions.length]; const done=s3Remaining-s3Questions.length; return(
             <div style={{...card}}>
@@ -940,7 +940,7 @@ export default function TimesTableApp() {
               </div>
             </div>
           );})()}
- 
+
           {/* Practice */}
           {gameScreen==="practice"&&practiceQs.length>0&&(()=>{const q=practiceQs[practiceIdx%practiceQs.length]; const done=practiceRemaining-practiceQs.length; return(
             <div style={{...card}}>
@@ -964,7 +964,7 @@ export default function TimesTableApp() {
               </div>
             </div>
           );})()}
- 
+
           {!["home","practice"].includes(gameScreen)&&<Footer/>}
         </>
       )}
