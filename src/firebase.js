@@ -111,20 +111,36 @@ export async function getClass(classId) {
 }
 
 export async function joinClass(uid, className, password) {
+  // Query by name only (case-insensitive), then check password in JS
   const q = query(
     collection(db, "classes"),
-    where("name", "==", className),
-    where("password", "==", password)
+    where("name", "==", className.trim())
   );
   const snap = await getDocs(q);
-  if (snap.empty) throw new Error("Class not found or wrong password.");
-  const cls = snap.docs[0].data();
+
+  // Also try case-insensitive match in case name casing differs
+  let matchDoc = snap.docs.find(d => 
+    d.data().name.toLowerCase() === className.trim().toLowerCase() &&
+    d.data().password === password.trim()
+  );
+
+  // If exact match failed, try fetching all classes and matching case-insensitively
+  if (!matchDoc) {
+    const allSnap = await getDocs(collection(db, "classes"));
+    matchDoc = allSnap.docs.find(d =>
+      d.data().name.toLowerCase() === className.trim().toLowerCase() &&
+      d.data().password === password.trim()
+    );
+  }
+
+  if (!matchDoc) throw new Error("Class not found or wrong password.");
+
+  const cls = matchDoc.data();
   const classId = cls.id;
-  // Add student to class
+
   await updateDoc(doc(db, "classes", classId), {
     studentIds: arrayUnion(uid),
   });
-  // Set classId on user
   await updateDoc(doc(db, "users", uid), { classId });
   return cls;
 }
