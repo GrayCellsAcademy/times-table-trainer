@@ -37,22 +37,30 @@ export const db = getFirestore(app);
 // ─── Auth helpers ────────────────────────────────────────────────
 
 export async function registerUser(email, password, name, role) {
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  const uid = cred.user.uid;
-  await setDoc(doc(db, "users", uid), {
-    id: uid,
-    name,
-    role,
-    email,
-    classId: null,
-    progress: {
-      currentTable: 2,
-      masteredTables: [],
-      stage: "s1",
-      certificates: [],
-    },
-  });
-  return cred.user;
+  console.log("registerUser called", email, name, role);
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    console.log("Auth user created:", cred.user.uid);
+    const uid = cred.user.uid;
+    await setDoc(doc(db, "users", uid), {
+      id: uid,
+      name,
+      role,
+      email,
+      classId: null,
+      progress: {
+        currentTable: 2,
+        masteredTables: [],
+        stage: "s1",
+        certificates: [],
+      },
+    });
+    console.log("Firestore user saved!");
+    return cred.user;
+  } catch(e) {
+    console.error("registerUser error:", e.code, e.message);
+    throw e;
+  }
 }
 
 export async function loginUser(email, password) {
